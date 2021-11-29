@@ -1000,12 +1000,12 @@ func (e *env) getObjLen(obj *ast.ArrayType) uint64 {
 		value = lit.Value
 	} else {
 		constName := obj.Len.(*ast.Ident).Name
-		panic(constName)
 		found := false
 		for _, f := range e.files {
 			ast.Inspect(f, func(node ast.Node) bool {
 				spec, ok := node.(*ast.ValueSpec)
 				if ok && spec.Names[0].Name == constName {
+					panic("found name")
 					value = spec.Names[0].Obj.Decl.(*ast.ValueSpec).Values[0].(*ast.BasicLit).Value
 					found =true
 					return false
