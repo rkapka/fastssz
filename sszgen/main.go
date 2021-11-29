@@ -1019,6 +1019,7 @@ func (e *env) getObjLen(obj *ast.ArrayType) uint64 {
 			if found {
 				break
 			}
+			
 			ast.Inspect(f, func(node ast.Node) bool {
 				spec, ok := node.(*ast.ValueSpec)
 				if ok && spec.Names[0].Name == constName {
