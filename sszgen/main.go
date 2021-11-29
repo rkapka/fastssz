@@ -999,8 +999,8 @@ func (e *env) getObjLen(obj *ast.ArrayType) uint64 {
 	if ok {
 		value = lit.Value
 	} else {
-		constName := obj.Len.(*ast.Ident).Name
-		found := false
+		//constName := obj.Len.(*ast.Ident).Name
+		//found := false
 		var list []string
 		for _, f := range e.files {
 			list = append(list, f.Name.Name)
