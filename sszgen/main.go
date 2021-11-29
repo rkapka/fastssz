@@ -999,12 +999,13 @@ func (e *env) getObjLen(obj *ast.ArrayType) uint64 {
 	if ok {
 		value = lit.Value
 	} else {
-		//constName := obj.Len.(*ast.Ident).Name
-		//found := false
-		var list []string
+		constName := obj.Len.(*ast.Ident).Name
+		found := false
 		for _, f := range e.files {
-			list = append(list, f.Name.Name)
-			/*ast.Inspect(f, func(node ast.Node) bool {
+			if found {
+				break
+			}
+			ast.Inspect(f, func(node ast.Node) bool {
 				spec, ok := node.(*ast.ValueSpec)
 				if ok && spec.Names[0].Name == constName {
 					value = spec.Names[0].Obj.Decl.(*ast.ValueSpec).Values[0].(*ast.BasicLit).Value
@@ -1013,13 +1014,12 @@ func (e *env) getObjLen(obj *ast.ArrayType) uint64 {
 				}
 				return true
 			})
-			if found {
-				break
-			}*/
 		}
 		for _, f := range e.include {
-			list = append(list, f.Name.Name)
-			/*ast.Inspect(f, func(node ast.Node) bool {
+			if found {
+				break
+			}
+			ast.Inspect(f, func(node ast.Node) bool {
 				spec, ok := node.(*ast.ValueSpec)
 				if ok && spec.Names[0].Name == constName {
 					value = spec.Names[0].Obj.Decl.(*ast.ValueSpec).Values[0].(*ast.BasicLit).Value
@@ -1028,11 +1028,7 @@ func (e *env) getObjLen(obj *ast.ArrayType) uint64 {
 				}
 				return true
 			})
-			if found {
-				break
-			}*/
 		}
-		panic(strings.Join(list, ","))
 	}
 	num, err := strconv.ParseUint(value, 0, 64)
 	if err != nil {
