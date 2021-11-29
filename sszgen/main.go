@@ -1004,7 +1004,7 @@ func (e *env) getObjLen(obj *ast.ArrayType) uint64 {
 		var list []string
 		for _, f := range e.files {
 			list = append(list, f.Name.Name)
-			ast.Inspect(f, func(node ast.Node) bool {
+			/*ast.Inspect(f, func(node ast.Node) bool {
 				spec, ok := node.(*ast.ValueSpec)
 				if ok && spec.Names[0].Name == constName {
 					value = spec.Names[0].Obj.Decl.(*ast.ValueSpec).Values[0].(*ast.BasicLit).Value
@@ -1015,7 +1015,22 @@ func (e *env) getObjLen(obj *ast.ArrayType) uint64 {
 			})
 			if found {
 				break
-			}
+			}*/
+		}
+		for _, f := range e.include {
+			list = append(list, f.Name.Name)
+			/*ast.Inspect(f, func(node ast.Node) bool {
+				spec, ok := node.(*ast.ValueSpec)
+				if ok && spec.Names[0].Name == constName {
+					value = spec.Names[0].Obj.Decl.(*ast.ValueSpec).Values[0].(*ast.BasicLit).Value
+					found =true
+					return false
+				}
+				return true
+			})
+			if found {
+				break
+			}*/
 		}
 		panic(strings.Join(list, ","))
 	}
