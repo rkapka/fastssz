@@ -1000,6 +1000,7 @@ func (e *env) getObjLen(obj *ast.ArrayType) uint64 {
 		value = lit.Value
 	} else {
 		constName := obj.Len.(*ast.Ident).Name
+		panic(constName)
 		found := false
 		for _, f := range e.files {
 			ast.Inspect(f, func(node ast.Node) bool {
