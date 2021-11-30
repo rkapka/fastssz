@@ -1001,7 +1001,7 @@ func (e *env) getObjLen(obj *ast.ArrayType) uint64 {
 	} else {
 		constName := obj.Len.(*ast.Ident).Name
 		found := false
-		
+
 		for _, f := range e.files {
 			if found {
 				break
