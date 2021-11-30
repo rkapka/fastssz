@@ -1002,9 +1002,8 @@ func (e *env) getObjLen(obj *ast.ArrayType) uint64 {
 		var l []string
 		//constName := obj.Len.(*ast.Ident).Name
 		//found := false
-		for _, f := range e.files {
-			l = append(l, f.Name.Name)
-			/*if found {
+		/*for _, f := range e.files {
+			if found {
 				break
 			}
 			ast.Inspect(f, func(node ast.Node) bool {
@@ -1015,10 +1014,12 @@ func (e *env) getObjLen(obj *ast.ArrayType) uint64 {
 					return false
 				}
 				return true
-			})*/
-		}
+			})
+		}*/
 		for _, f := range e.include {
-			l = append(l, f.Name.Name)
+			if f.Name.Name == "customtypes" {
+				l = append(l, f.Comments[0].List[0].Text)
+			}
 			/*if found {
 				break
 			}
