@@ -999,10 +999,9 @@ func (e *env) getObjLen(obj *ast.ArrayType) uint64 {
 	if ok {
 		value = lit.Value
 	} else {
-		var l []string
-		//constName := obj.Len.(*ast.Ident).Name
-		//found := false
-		/*for _, f := range e.files {
+		constName := obj.Len.(*ast.Ident).Name
+		found := false
+		for _, f := range e.files {
 			if found {
 				break
 			}
@@ -1015,12 +1014,9 @@ func (e *env) getObjLen(obj *ast.ArrayType) uint64 {
 				}
 				return true
 			})
-		}*/
-		for s, _ := range e.include {
-			//if f.Name.Name == "customtypes" {
-				l = append(l, s)
-			//}
-			/*if found {
+		}
+		for _, f := range e.include {
+			if found {
 				break
 			}
 			ast.Inspect(f, func(node ast.Node) bool {
@@ -1031,9 +1027,8 @@ func (e *env) getObjLen(obj *ast.ArrayType) uint64 {
 					return false
 				}
 				return true
-			})*/
+			})
 		}
-		panic(strings.Join(l,","))
 	}
 	num, err := strconv.ParseUint(value, 0, 64)
 	if err != nil {
