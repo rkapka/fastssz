@@ -1016,10 +1016,10 @@ func (e *env) getObjLen(obj *ast.ArrayType) uint64 {
 				return true
 			})
 		}*/
-		for _, f := range e.include {
-			if f.Name.Name == "customtypes" {
-				l = append(l, f.Comments[0].List[0].Text)
-			}
+		for s, _ := range e.include {
+			//if f.Name.Name == "customtypes" {
+				l = append(l, s)
+			//}
 			/*if found {
 				break
 			}
