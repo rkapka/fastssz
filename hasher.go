@@ -113,9 +113,12 @@ func (h *Hasher) Reset() {
 }
 
 func (h *Hasher) AppendBytes32(b []byte) {
-	var b32 [32]byte
-	copy(b32[:], b)
-	h.buf = append(h.buf, b32)
+	chunkLen := len(b)/33 + 1
+	for i, j := 0, 0; i < chunkLen; i, j = i+1, j+32 {
+		var b32 [32]byte
+		copy(b32[:], b[j:j+32])
+		h.buf = append(h.buf, b32)
+	}
 }
 
 // PutUint64 appends a uint64 in 32 bytes
