@@ -21,7 +21,7 @@ var (
 
 var zeroHashes [65][32]byte
 var zeroHashLevels map[string]int
-var trueBytes, falseBytes []byte
+var trueBytes, falseBytes [32]byte
 
 const (
 	mask0 = ^uint64((1 << (1 << iota)) - 1)
@@ -42,11 +42,9 @@ const (
 )
 
 func init() {
-	falseBytes = make([]byte, 32)
-	trueBytes = make([]byte, 32)
 	trueBytes[0] = 1
 	zeroHashLevels = make(map[string]int)
-	zeroHashLevels[string(falseBytes)] = 0
+	zeroHashLevels[string(falseBytes[:])] = 0
 
 	tmp := [64]byte{}
 	for i := 0; i < 64; i++ {
@@ -65,9 +63,9 @@ func HashWithDefaultHasher(v HashRoot) ([32]byte, error) {
 		DefaultHasherPool.Put(hh)
 		return [32]byte{}, err
 	}
-	root, err := hh.HashRoot()
+	root := hh.HashRoot()
 	DefaultHasherPool.Put(hh)
-	return root, err
+	return root, nil
 }
 
 var zeroBytes = make([]byte, 32)
@@ -78,7 +76,9 @@ var DefaultHasherPool HasherPool
 // Hasher is a utility tool to hash SSZ structs
 type Hasher struct {
 	// buffer array to store hashing values
-	buf []byte
+	buf [][32]byte
+
+	pos uint8
 
 	// tmp array used for uint64 and bitlist processing
 	tmp []byte
@@ -113,11 +113,9 @@ func (h *Hasher) Reset() {
 }
 
 func (h *Hasher) AppendBytes32(b []byte) {
-	h.buf = append(h.buf, b...)
-	if rest := len(b) % 32; rest != 0 {
-		// pad zero bytes to the left
-		h.buf = append(h.buf, zeroBytes[:32-rest]...)
-	}
+	var b32 [32]byte
+	copy(b32[:], b)
+	h.buf = append(h.buf, b32)
 }
 
 // PutUint64 appends a uint64 in 32 bytes
@@ -159,21 +157,42 @@ func CalculateLimit(maxCapacity, numItems, size uint64) uint64 {
 
 func (h *Hasher) FillUpTo32() {
 	// pad zero bytes to the left
-	if rest := len(h.buf) % 32; rest != 0 {
-		h.buf = append(h.buf, zeroBytes[:32-rest]...)
+	if h.pos != 0 {
+		copy(h.buf[len(h.buf)-1][h.pos:], zeroBytes[:32-h.pos])
 	}
+	h.pos = 0
 }
 
 func (h *Hasher) AppendUint8(i uint8) {
-	h.buf = MarshalUint8(h.buf, i)
+	dst := make([]byte, 0)
+	dst = MarshalUint8(dst, i)
+	if h.pos == 0 {
+		var b32 [32]byte
+		copy(b32[:], dst)
+		h.buf = append(h.buf, b32)
+	} else {
+		copy(h.buf[len(h.buf)-1][h.pos:], dst)
+	}
+	h.pos = (h.pos + 1) % 32
 }
 
 func (h *Hasher) AppendUint64(i uint64) {
-	h.buf = MarshalUint64(h.buf, i)
+	dst := make([]byte, 0)
+	dst = MarshalUint64(dst, i)
+	willFit := h.pos <= 24
+	if willFit {
+		copy(h.buf[len(h.buf)-1][h.pos:], dst)
+	} else {
+		copy(h.buf[len(h.buf)-1][h.pos:], dst[:32-h.pos])
+		var b32 [32]byte
+		copy(b32[:], dst[32-h.pos:])
+		h.buf = append(h.buf, b32)
+	}
+	h.pos = (h.pos + 8) % 32
 }
 
-func (h *Hasher) Append(i []byte) {
-	h.buf = append(h.buf, i...)
+func (h *Hasher) Append(i [32]byte) {
+	h.buf = append(h.buf, i)
 }
 
 // PutRootVector appends an array of roots
@@ -183,7 +202,9 @@ func (h *Hasher) PutRootVector(b [][]byte, maxCapacity ...uint64) error {
 		if len(i) != 32 {
 			return fmt.Errorf("bad root")
 		}
-		h.buf = append(h.buf, i...)
+		var b32 [32]byte
+		copy(b32[:], i)
+		h.buf = append(h.buf, b32)
 	}
 
 	if len(maxCapacity) == 0 {
@@ -250,9 +271,9 @@ func (h *Hasher) PutBitlist(bb []byte, maxSize uint64) {
 // PutBool appends a boolean
 func (h *Hasher) PutBool(b bool) {
 	if b {
-		h.buf = append(h.buf, trueBytes...)
+		h.buf = append(h.buf, trueBytes)
 	} else {
-		h.buf = append(h.buf, falseBytes...)
+		h.buf = append(h.buf, falseBytes)
 	}
 }
 
@@ -279,7 +300,7 @@ func (h *Hasher) Index() int {
 func (h *Hasher) Merkleize(indx int) {
 	input := h.buf[indx:]
 	result := merkleizeInput(input, 0)
-	h.buf = append(h.buf[:indx], result...)
+	h.buf = append(h.buf[:indx], result)
 }
 
 // MerkleizeWithMixin is used to merkleize the last group of the hasher
@@ -293,19 +314,13 @@ func (h *Hasher) MerkleizeWithMixin(indx int, num, limit uint64) {
 		output[indx] = 0
 	}
 	MarshalUint64(output[:0], num)
-	result = h.doHash(result, result, output)
-
-	h.buf = append(h.buf[:indx], result...)
+	h.doHash(result[:], result[:], output)
+	h.buf = append(h.buf[:indx], result)
 }
 
 // HashRoot creates the hash final hash root
-func (h *Hasher) HashRoot() (res [32]byte, err error) {
-	if len(h.buf) != 32 {
-		err = fmt.Errorf("expected 32 byte size")
-		return
-	}
-	copy(res[:], h.buf)
-	return
+func (h *Hasher) HashRoot() [32]byte {
+	return h.buf[0]
 }
 
 // HasherPool may be used for pooling Hashers for similarly typed SSZs.
@@ -430,26 +445,12 @@ func (h *Hasher) merkleizeImpl(dst []byte, input []byte, limit uint64) []byte {
 	return append(dst, res...)
 }
 
-func merkleizeInput(input []byte, limit uint64) []byte {
-	elemCount := len(input) / 32
-	elements := make([][32]byte, elemCount)
-	elemLen := len(elements)
-	for i, j := 0, 0; j < elemLen; i, j = i+32, j+1 {
-		if j == elemLen-1 {
-			copy(elements[j][:], input[i:])
-		} else {
-			copy(elements[j][:], input[i:i+32])
-		}
-	}
-
-	var result [32]byte
+func merkleizeInput(input [][32]byte, limit uint64) [32]byte {
 	if limit == 0 {
-		result = merkleizeVector(elements, uint64(elemLen))
+		return merkleizeVector(input, uint64(len(input)))
 	} else {
-		result = merkleizeVector(elements, limit)
+		return merkleizeVector(input, limit)
 	}
-
-	return result[:]
 }
 
 // MerkleizeVector uses our optimized routine to hash a list of 32-byte

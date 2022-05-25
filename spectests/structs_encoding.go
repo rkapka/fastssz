@@ -610,7 +610,9 @@ func (d *Deposit) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 				err = ssz.ErrBytesLength
 				return
 			}
-			hh.Append(i)
+			var b32 [32]byte
+			copy(b32[:], i)
+			hh.Append(b32)
 		}
 		hh.Merkleize(subIndx)
 	}
@@ -1669,7 +1671,7 @@ func (h *HistoricalBatch) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	{
 		subIndx := hh.Index()
 		for _, i := range h.BlockRoots {
-			hh.Append(i[:])
+			hh.Append(i)
 		}
 		hh.Merkleize(subIndx)
 	}
@@ -1686,7 +1688,9 @@ func (h *HistoricalBatch) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 				err = ssz.ErrBytesLength
 				return
 			}
-			hh.Append(i)
+			var b32 [32]byte
+			copy(b32[:], i)
+			hh.Append(b32)
 		}
 		hh.Merkleize(subIndx)
 	}
@@ -2467,7 +2471,7 @@ func (b *BeaconState) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 	{
 		subIndx := hh.Index()
 		for _, i := range b.BlockRoots {
-			hh.Append(i[:])
+			hh.Append(i)
 		}
 		hh.Merkleize(subIndx)
 	}
@@ -2480,7 +2484,7 @@ func (b *BeaconState) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 		}
 		subIndx := hh.Index()
 		for _, i := range b.StateRoots {
-			hh.Append(i[:])
+			hh.Append(i)
 		}
 		hh.Merkleize(subIndx)
 	}
@@ -2493,7 +2497,7 @@ func (b *BeaconState) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 		}
 		subIndx := hh.Index()
 		for _, i := range b.HistoricalRoots {
-			hh.Append(i[:])
+			hh.Append(i)
 		}
 		numItems := uint64(len(b.HistoricalRoots))
 		hh.MerkleizeWithMixin(subIndx, numItems, ssz.CalculateLimit(16777216, numItems, 32))
@@ -2566,7 +2570,9 @@ func (b *BeaconState) HashTreeRootWith(hh *ssz.Hasher) (err error) {
 				err = ssz.ErrBytesLength
 				return
 			}
-			hh.Append(i)
+			var b32 [32]byte
+			copy(b32[:],i)
+			hh.Append(b32)
 		}
 		hh.Merkleize(subIndx)
 	}
