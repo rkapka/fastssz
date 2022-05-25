@@ -116,7 +116,11 @@ func (h *Hasher) AppendBytes32(b []byte) {
 	chunkLen := len(b)/33 + 1
 	for i, j := 0, 0; i < chunkLen; i, j = i+1, j+32 {
 		var b32 [32]byte
-		copy(b32[:], b[j:j+32])
+		if i == chunkLen-1 {
+			copy(b32[:], b[j:])
+		} else {
+			copy(b32[:], b[j:j+32])
+		}
 		h.buf = append(h.buf, b32)
 	}
 }
