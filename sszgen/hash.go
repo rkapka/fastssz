@@ -78,13 +78,27 @@ func (v *Value) hashRoots(isList bool, elem Type) string {
 		merkleize = "hh.Merkleize(subIndx)"
 	}
 
-	tmpl := `{
+	var tmpl string
+	if appendFn == "Append" {
+		tmpl = `{
+		{{.outer}}subIndx := hh.Index()
+		for _, i := range ::.{{.name}} {
+			var b32 [32]byte
+			copy(b32[:],{{.subName}})
+			{{.inner}}hh.{{.appendFn}}(b32)
+		}
+		{{.merkleize}}
+	}`
+	} else {
+		tmpl = `{
 		{{.outer}}subIndx := hh.Index()
 		for _, i := range ::.{{.name}} {
 			{{.inner}}hh.{{.appendFn}}({{.subName}})
 		}
 		{{.merkleize}}
 	}`
+	}
+
 	return execTmpl(tmpl, map[string]interface{}{
 		"outer":     v.validate(),
 		"inner":     inner,
